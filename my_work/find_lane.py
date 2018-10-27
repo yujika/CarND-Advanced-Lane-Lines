@@ -39,24 +39,25 @@ for image_file in test_file_name:
     
     image = image_undistort
     
-    thresh = (180, 255)
-    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-    binary = np.zeros_like(gray)
-    binary[(gray > thresh[0]) & (gray <= thresh[1])] = 1
-    
-    R = image[:,:,0]
-    G = image[:,:,1]
-    B = image[:,:,2]
-    
-    
-    thresh = (200, 255)
-    binary = np.zeros_like(R)
-    binary[(R > thresh[0]) & (R <= thresh[1])] = 1
-    
-    hls = cv2.cvtColor(image, cv2.COLOR_RGB2HLS)
-    H = hls[:,:,0]
-    L = hls[:,:,1]
-    S = hls[:,:,2]
+    #### Just for experimental
+#    thresh = (180, 255)
+#    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+#    binary = np.zeros_like(gray)
+#    binary[(gray > thresh[0]) & (gray <= thresh[1])] = 1
+#    
+#    R = image[:,:,0]
+#    G = image[:,:,1]
+#    B = image[:,:,2]
+#    
+#    
+#    thresh = (200, 255)
+#    binary = np.zeros_like(R)
+#    binary[(R > thresh[0]) & (R <= thresh[1])] = 1
+#    
+#    hls = cv2.cvtColor(image, cv2.COLOR_RGB2HLS)
+#    H = hls[:,:,0]
+#    L = hls[:,:,1]
+#    S = hls[:,:,2]
     
 #    plt.title('H')
 #    plt.imshow(H,cmap='gray')
@@ -69,7 +70,7 @@ for image_file in test_file_name:
 #    plt.show()
     
     
-    hls_binary = util.hls_select(image, thresh=(90, 255))
+    hls_binary = util.hls_select(image_undistort, thresh=(90, 255))
  #   plt.title('S channel with thresh')
  #   plt.imshow(hls_binary, cmap='gray')
  #   plt.show()
@@ -108,7 +109,7 @@ for image_file in test_file_name:
  #   plt.title('direction')
  #   plt.imshow(dir_binary,cmap='gray')
  #   plt.show()
-    combined = np.zeros_like(binary)
+    combined = np.zeros_like(hls_binary)
     combined[((gradx == 1) & (grady == 1)) | ((mag_binary == 1) & (dir_binary == 1))] = 1
  #   plt.title('COMBINED')
  #   plt.imshow(combined,cmap='gray')
@@ -159,8 +160,6 @@ for image_file in test_file_name:
     plt.savefig('../output_images/' + 'color_with_lane_region_' + base_fn + '.jpg')
     plt.show()
     
-    
-    quadratic_coeff = 3e-4 # arbitrary quadratic coefficient
 
     left_fit_in = left_fitx[::-1]  # Reverse to match top-to-bottom in y
     right_fit_in = right_fitx[::-1]  # Reverse to match top-to-bottom in y
@@ -205,4 +204,5 @@ for image_file in test_file_name:
     plt.imsave('../output_images/' + 'output_' + base_fn + '.jpg', img_overlayed )
 
     
-    
+
+
