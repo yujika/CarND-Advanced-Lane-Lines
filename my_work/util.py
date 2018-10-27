@@ -15,6 +15,36 @@ import matplotlib.image as mpimg
 
 camera_mtx_file_name = 'camera_mtx.pickle'
 
+# Define conversions in x and y from pixels space to meters
+ym_per_pix = 30/720 # meters per pixel in y dimension
+xm_per_pix = 3.7/700 # meters per pixel in x dimension
+
+
+
+# Define a class to receive the characteristics of each line detection
+class Line():
+    def __init__(self):
+        # was the line detected in the last iteration?
+        self.detected = False  
+        # x values of the last n fits of the line
+        self.recent_xfitted = [] 
+        #average x values of the fitted line over the last n iterations
+        self.bestx = None     
+        #polynomial coefficients averaged over the last n iterations
+        self.best_fit = None  
+        #polynomial coefficients for the most recent fit
+        self.current_fit = [np.array([False])]  
+        #radius of curvature of the line in some units
+        self.radius_of_curvature = None 
+        #distance in meters of vehicle center from the line
+        self.line_base_pos = None 
+        #difference in fit coefficients between last and new fits
+        self.diffs = np.array([0,0,0], dtype='float') 
+        #x values for detected line pixels
+        self.allx = None  
+        #y values for detected line pixels
+        self.ally = None 
+
 #from example.
 def warper(img, src, dst):
 
@@ -161,6 +191,108 @@ def find_lane_pixels(binary_warped,
     righty = nonzeroy[right_lane_inds]
 
     return leftx, lefty, rightx, righty
+
+# for video frames
+def find_lane_pixels_with_history(binary_warped,
+                                  nwindows,
+                                  margin,
+                                  minpix,
+                                  window_pos,
+                                  leftx_with_hist, lefty_with_hist, rightx_with_hist, righty_with_hist):
+    # Take a histogram of the bottom half of the image
+    histogram = np.sum(binary_warped[binary_warped.shape[0]//2:,:], axis=0)
+    # Find the peak of the left and right halves of the histogram
+    # These will be the starting point for the left and right lines
+    midpoint = np.int(histogram.shape[0]//2)
+    leftx_base = np.argmax(histogram[:midpoint])
+    rightx_base = np.argmax(histogram[midpoint:]) + midpoint
+
+
+    # Set height of windows - based on nwindows above and image shape
+    window_height = np.int(binary_warped.shape[0]//nwindows)
+    # Identify the x and y positions of all nonzero pixels in the image
+    nonzero = binary_warped.nonzero()
+    nonzeroy = np.array(nonzero[0])
+    nonzerox = np.array(nonzero[1])
+    # Current positions to be updated later for each window in nwindows
+    if ( window_pos == (0,0) ):
+        leftx_current = leftx_base
+        rightx_current = rightx_base
+    else:   
+        leftx_current = window_pos[0]
+        rightx_current = window_pos[1]
+
+    # Create empty lists to receive left and right lane pixel indices
+    left_lane_inds = []
+    right_lane_inds = []
+
+    window_pos_ret = []
+    # Step through the windows one by one
+    for window in range(nwindows):
+        # Identify window boundaries in x and y (and right and left)
+        win_y_low = binary_warped.shape[0] - (window+1)*window_height
+        win_y_high = binary_warped.shape[0] - window*window_height
+        ### TO-DO: Find the four below boundaries of the window ###
+        win_xleft_low = leftx_current - margin
+        win_xleft_high = leftx_current + margin
+        win_xright_low = rightx_current - margin
+        win_xright_high = rightx_current + margin
+               
+        # Identify the nonzero pixels in x and y within the window #
+        good_left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & 
+        (nonzerox >= win_xleft_low) &  (nonzerox < win_xleft_high)).nonzero()[0]
+        good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & 
+        (nonzerox >= win_xright_low) &  (nonzerox < win_xright_high)).nonzero()[0]
+        
+        if ( len(lefty_with_hist) > 0 ):
+            good_left_inds_from_hist = ((lefty_with_hist>= win_y_low) & (lefty_with_hist < win_y_high) & 
+            (leftx_with_hist >= win_xleft_low) &  (leftx_with_hist < win_xleft_high)).nonzero()[0]
+        else:
+            good_left_inds_from_hist = []
+        if ( len(righty_with_hist) > 0 ):
+            good_right_inds_from_hist = ((righty_with_hist >= win_y_low) & (righty_with_hist < win_y_high) & 
+            (rightx_with_hist >= win_xright_low) &  (rightx_with_hist < win_xright_high)).nonzero()[0]
+        else:
+            good_right_inds_from_hist = []
+        
+        # Append these indices to the lists
+        left_lane_inds.append(good_left_inds)
+        right_lane_inds.append(good_right_inds)
+        
+        # If you found > minpix pixels, recenter next window on their mean position
+        left_no_lane_found = True
+        right_no_lane_found = True
+        if len(good_left_inds) + len(good_left_inds_from_hist) > minpix:
+            leftx_current = np.int(np.mean(np.append( nonzerox[good_left_inds], leftx_with_hist[good_left_inds_from_hist] )) )
+            left_no_lane_found = False
+        if len(good_right_inds) + len(good_right_inds_from_hist) > minpix:        
+            rightx_current = np.int(np.mean(np.append( nonzerox[good_right_inds], rightx_with_hist[good_right_inds_from_hist] )) )
+            right_no_lane_found = False
+        if ( left_no_lane_found and right_no_lane_found==False ):
+            leftx_current = int(rightx_current - 2.5/xm_per_pix)
+        if ( right_no_lane_found and left_no_lane_found==False ):
+            rightx_current = int(leftx_current + 2.5/xm_per_pix)
+            
+        window_pos_ret.append( (leftx_current,rightx_current,win_y_high) )
+        
+
+    # Concatenate the arrays of indices (previously was a list of lists of pixels)
+    try:
+        left_lane_inds = np.concatenate(left_lane_inds)
+        right_lane_inds = np.concatenate(right_lane_inds)
+    except ValueError:
+        # Avoids an error if the above is not implemented fully
+        pass
+
+    # Extract left and right line pixel positions
+    leftx = nonzerox[left_lane_inds]
+    lefty = nonzeroy[left_lane_inds] 
+    rightx = nonzerox[right_lane_inds]
+    righty = nonzeroy[right_lane_inds]
+
+    return leftx, lefty, rightx, righty, window_pos_ret
+
+
 
 
 def fit_polynomial(leftx, lefty, rightx, righty, pic_height):

@@ -74,7 +74,7 @@ for image_file in test_file_name:
     
     
     src_points = np.float32([[571,467],
-                             [710,467],
+                             [717,467],
                              [1105,720],
                              [205,720]])
     dst_points = np.float32([[1280/4,   0 ],

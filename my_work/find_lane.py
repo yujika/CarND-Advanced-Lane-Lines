@@ -44,20 +44,27 @@ for image_file in test_file_name:
 #    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
 #    binary = np.zeros_like(gray)
 #    binary[(gray > thresh[0]) & (gray <= thresh[1])] = 1
-#    
-#    R = image[:,:,0]
+    
+    R = image[:,:,0]
 #    G = image[:,:,1]
 #    B = image[:,:,2]
-#    
-#    
-#    thresh = (200, 255)
-#    binary = np.zeros_like(R)
-#    binary[(R > thresh[0]) & (R <= thresh[1])] = 1
-#    
-#    hls = cv2.cvtColor(image, cv2.COLOR_RGB2HLS)
-#    H = hls[:,:,0]
-#    L = hls[:,:,1]
-#    S = hls[:,:,2]
+    
+    Rdash = ((R - np.mean(R))/np.std(R))
+    
+    thresh = (200, 255)
+    binary = np.zeros_like(R)
+    binary[(R > thresh[0]) & (R <= thresh[1])] = 1
+    plt.title('R')
+    plt.imshow(R,cmap='gray')
+    plt.show()
+    plt.title('R dash')
+    plt.imshow(Rdash,cmap='gray')
+    plt.show()
+
+    hls = cv2.cvtColor(image, cv2.COLOR_RGB2HLS)
+    H = hls[:,:,0]
+    L = hls[:,:,1]
+    S = hls[:,:,2]
     
 #    plt.title('H')
 #    plt.imshow(H,cmap='gray')
@@ -65,15 +72,15 @@ for image_file in test_file_name:
 #    plt.title('L')
 #    plt.imshow(L,cmap='gray')
 #    plt.show()
-#    plt.title('S')
-#    plt.imshow(S,cmap='gray')
-#    plt.show()
+    plt.title('S')
+    plt.imshow(S,cmap='gray')
+    plt.show()
     
     
     hls_binary = util.hls_select(image_undistort, thresh=(90, 255))
- #   plt.title('S channel with thresh')
- #   plt.imshow(hls_binary, cmap='gray')
- #   plt.show()
+    plt.title('S channel with thresh')
+    plt.imshow(hls_binary, cmap='gray')
+    plt.show()
     
 #    thresh = (90, 255)
 #    binary = np.zeros_like(S)
@@ -195,7 +202,7 @@ for image_file in test_file_name:
     y_start = int(img_overlayed.shape[0]/10)
     y_inc = int(img_overlayed.shape[0]/20)
     font_size = 1.0
-    cv2.putText(img_overlayed,'R={:} meter'.format(curverad),(x_start,y_start), font, font_size, (255,255,255), 2, cv2.LINE_AA)
+    cv2.putText(img_overlayed,'R={:>8f} meter'.format(curverad),(x_start,y_start), font, font_size, (255,255,255), 2, cv2.LINE_AA)
     cv2.putText(img_overlayed,car_position_string,(x_start,y_start+y_inc*1), font, font_size, (255,255,255), 2, cv2.LINE_AA)
     
     
