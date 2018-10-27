@@ -87,6 +87,8 @@ for image_file in test_file_name:
  #   plt.imshow(image)
  #   plt.show()
     
+    # Is it better to normalize?
+     
     # Choose a Sobel kernel size
     ksize = 9 # Choose a larger odd number to smooth gradient measurements
     # Apply each of the thresholding functions
@@ -148,6 +150,15 @@ for image_file in test_file_name:
     plt.savefig('../output_images/' + 'color_fit_lines_' + base_fn + '.jpg')
     plt.show()
     
+    color_with_lane_region = np.zeros( bird_view.shape + ( 3, ), dtype=np.int32 )
+    poly = np.vstack( ( np.array([left_fitx,ploty],dtype=np.int32).T , np.array([right_fitx,ploty],dtype=np.int32).T[::-1] ) )
+    color_with_lane_region = cv2.fillPoly( color_with_lane_region, [poly] , color=[0,32,0])
+    color_with_lane_region[lefty,leftx] = [255, 0, 0]
+    color_with_lane_region[righty,rightx] = [0, 0, 255 ]
+    plt.imshow(color_with_lane_region)
+    plt.savefig('../output_images/' + 'color_with_lane_region_' + base_fn + '.jpg')
+    plt.show()
+    
     
     quadratic_coeff = 3e-4 # arbitrary quadratic coefficient
 
@@ -162,21 +173,33 @@ for image_file in test_file_name:
     #left_curverad, right_curverad = util.measure_curvature_pixels(left_fitx, right_fitx, ploty )
     left_curverad, right_curverad = util.measure_curvature_real(left_fit_cr, right_fit_cr, ploty, xm_per_pix, ym_per_pix )
     print(left_curverad, right_curverad )
+    curverad = np.mean( [left_curverad, right_curverad])
     
     center = left_fit_in[0] + (right_fit_in[0] - left_fit_in[0])/2
     camera_center_pix = bird_view.shape[1]/2
     if ( center == camera_center_pix):
-        print("CENTER")
+        car_position_string = "CENTER"
     elif ( center < camera_center_pix):
         diff = (camera_center_pix - center)*xm_per_pix
-        print("Vehcle is {:.2f}m left of center".format(diff))
+        car_position_string = "Vehcle is {:.2f}m left of center".format(diff)
     else:
         diff = (center - camera_center_pix)*xm_per_pix
-        print("Vehcle is {:.2f}m right of center".format(diff))
+        car_position_string = "Vehcle is {:.2f}m right of center".format(diff)
+    print(car_position_string)
     
     #Warp the detected lane boundaries back onto the original image.
-    camera_view = util.warper(color_fit_lines, dst_points, src_points )
+    camera_view = util.warper(color_with_lane_region, dst_points, src_points )
     img_overlayed = util.weighted_img(camera_view.astype(np.uint8), image_undistort )
+    
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    x_start = int(img_overlayed.shape[1]/100)
+    y_start = int(img_overlayed.shape[0]/10)
+    y_inc = int(img_overlayed.shape[0]/20)
+    font_size = 1.0
+    cv2.putText(img_overlayed,'R={:} meter'.format(curverad),(x_start,y_start), font, font_size, (255,255,255), 2, cv2.LINE_AA)
+    cv2.putText(img_overlayed,car_position_string,(x_start,y_start+y_inc*1), font, font_size, (255,255,255), 2, cv2.LINE_AA)
+    
+    
     plt.imshow(img_overlayed)
     plt.show()
     plt.imsave('../output_images/' + 'output_' + base_fn + '.jpg', img_overlayed )
