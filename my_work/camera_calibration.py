@@ -15,6 +15,27 @@ import matplotlib.image as mpimg
 import util
 
 
+def corners_unwarp(img, nx, ny, mtx, dist):
+    img_und = cv2.undistort(img, mtx, dist)
+    gray = cv2.cvtColor( img_und, cv2.COLOR_BGR2GRAY )
+    ret, corners = cv2.findChessboardCorners(gray, (nx, ny) )
+    if ( ret ):
+        img_corner = cv2.drawChessboardCorners(img_und, (9,6), corners,ret)
+        src = np.float32([[corners[0,0,:]],[corners[1,0,:]],[corners[nx,0,:]],[corners[nx+1,0,:]]])
+        h,w,c = img.shape
+        dst = np.float32([[0.5*w/nx,0.5*h/ny],[1.5*w/nx,0.5*h/ny],[0.5*w/nx,1.5*h/ny],[1.5*w/nx,1.5*h/ny]])
+        M = cv2.getPerspectiveTransform(src,dst)
+        warped = cv2.warpPerspective(img_corner,M,(w,h))
+        return warped,M
+    return img_und, M
+
+def corners_undist_unwarp(img, corners, nx, ny ):
+    src = np.float32([[corners[0,0,:]],[corners[1,0,:]],[corners[nx,0,:]],[corners[nx+1,0,:]]])
+    h,w,c = img.shape
+    dst = np.float32([[0.5*w/nx,0.5*h/ny],[1.5*w/nx,0.5*h/ny],[0.5*w/nx,1.5*h/ny],[1.5*w/nx,1.5*h/ny]])
+    M = cv2.getPerspectiveTransform(src,dst)
+    warped = cv2.warpPerspective(img,M,(w,h))
+    return warped
 
 
 # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
@@ -53,15 +74,30 @@ for fname in images:
 #Calibrate camera
 ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1],None,None)
 
+nx=9
+ny=6
+img = cv2.imread('../camera_cal/calibration1.jpg')
+img_und = cv2.undistort(img, mtx, dist)
 
+f, (ax1, ax2) = plt.subplots(1, 2, figsize=(24, 9))
+f.tight_layout()
+ax1.imshow(img)
+ax1.set_title('Original Image', fontsize=50)
+ax2.imshow(img_und)
+ax2.set_title('Undistorted Image', fontsize=50)
+plt.subplots_adjust(left=0., right=1, top=0.9, bottom=0.)
+plt.savefig('../output_images/undistort_output.png')
+plt.show()
 
 
 test_file_name = glob.glob('../test_images/straight_lines*.jpg')
 for image_file in test_file_name:
+    base_fn = os.path.basename(image_file).split('.')[0]
     image_org = mpimg.imread(image_file)
     image_undistort = cv2.undistort(image_org, mtx, dist, None, mtx)
     plt.imshow(image_undistort)
     plt.show()
+    plt.imsave('../output_images/' + 'undistort_'+base_fn + '.png', image_undistort )
     image = image_undistort
     hls_binary = util.hls_select(image, thresh=(90, 255))
     ksize = 9 # Choose a larger odd number to smooth gradient measurements
@@ -88,7 +124,6 @@ for image_file in test_file_name:
     plt.title('COMBINED bird view ' + image_file)
     plt.imshow(bird_view,cmap='gray')
     plt.show()
-    base_fn = os.path.basename(image_file).split('.')[0]
     plt.imsave('../output_images/' + 'binary_combo_warped_' + base_fn + '.png', bird_view*255, cmap='gray'  )
     
     
