@@ -45,9 +45,10 @@ for image_file in test_file_name:
 #    binary = np.zeros_like(gray)
 #    binary[(gray > thresh[0]) & (gray <= thresh[1])] = 1
     
-    R = image[:,:,0]
-#    G = image[:,:,1]
-#    B = image[:,:,2]
+    image_normalize = (image_undistort - np.mean(image_undistort))/np.std(image_undistort)*32+128
+    R = image_normalize[:,:,0]
+    G = image_normalize[:,:,1]
+
     
     Rdash = ((R - np.mean(R))/np.std(R))
     
@@ -117,7 +118,7 @@ for image_file in test_file_name:
  #   plt.imshow(dir_binary,cmap='gray')
  #   plt.show()
     combined = np.zeros_like(hls_binary)
-    combined[((gradx == 1) & (grady == 1)) | ((mag_binary == 1) & (dir_binary == 1))] = 1
+    combined[(((gradx == 1) & (grady == 1)) | ((mag_binary == 1) & (dir_binary == 1))) | ((R>128+48) & (G>128+48))] = 1
  #   plt.title('COMBINED')
  #   plt.imshow(combined,cmap='gray')
  #   plt.show()

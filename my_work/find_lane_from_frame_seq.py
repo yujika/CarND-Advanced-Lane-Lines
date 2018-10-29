@@ -171,7 +171,7 @@ cv2.namedWindow('line',cv2.WINDOW_NORMAL)
 ## Where start_second and end_second are integer values representing the start and end of the subclip
 ## You may also uncomment the following line for a subclip of the first 5 seconds
 ##clip1 = VideoFileClip("test_videos/solidWhiteRight.mp4").subclip(0,5)
-if ( 1 ):
+if ( 0 ):
     history_left_x = []
     history_left_y = []
     history_right_x = []
