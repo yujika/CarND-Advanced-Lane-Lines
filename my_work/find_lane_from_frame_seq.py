@@ -54,7 +54,7 @@ def process_image(image_org):
         mag_binary = util.mag_thresh(hls_binary, sobel_kernel=ksize, mag_thresh=(30, 100))
         dir_binary = util.dir_threshold(hls_binary, sobel_kernel=ksize, thresh=(-0.6*(np.pi/2), 0.6*(np.pi/2)))
         combined = np.zeros_like(hls_binary)
-        combined[(((gradx == 1) & (grady == 1)) | ((mag_binary == 1) & (dir_binary == 1))) | ((R>128+32) & (G>128+32))] = 1
+        combined[(((gradx == 1) & (grady == 1)) | ((mag_binary == 1) & (dir_binary == 1))) | ((R>128+48) & (G>128+48))] = 1
         bird_view = util.warper(combined, src_points, dst_points)
         
         if( len(history_left_x) > 0 ):
@@ -171,7 +171,7 @@ cv2.namedWindow('line',cv2.WINDOW_NORMAL)
 ## Where start_second and end_second are integer values representing the start and end of the subclip
 ## You may also uncomment the following line for a subclip of the first 5 seconds
 ##clip1 = VideoFileClip("test_videos/solidWhiteRight.mp4").subclip(0,5)
-if ( 0 ):
+if ( 1 ):
     history_left_x = []
     history_left_y = []
     history_right_x = []
