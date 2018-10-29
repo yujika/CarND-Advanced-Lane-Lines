@@ -91,8 +91,8 @@ I verified that my perspective transform was working as expected by drawing the 
 - set +- 100 pixels around the center position are sliding window.
 - devide image size by 9 for window height
 - in case for processing sequential images.
--- window position is saved and re-used for finding next frame's lane line position.
--- binary output from previous frames are also re-used to detect lane line position, which especially useful when lane line is not contiguous.
+    - window position is saved and re-used for finding next frame's lane line position.
+    - binary output from previous frames are also re-used to detect lane line position, which especially useful when lane line is not contiguous.
 
 ![alt text][image5]
 
