@@ -136,38 +136,38 @@ Here's a [link to harder challenge video result](./output_videos/harder_challeng
 #### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
 
 - approach
--- Utilize R and G channel to help increase weight of lane line
---- R and G channel includes luminance, so I normalized scene luminance as below.
+    - Utilize R and G channel to help increase weight of lane line
+        - R and G channel includes luminance, so I normalized scene luminance as below.
 ```python
         image_normalize = (image_undistort - np.mean(image_undistort))/np.std(image_undistort)*32+128
 ```
 ( line 36 of find_lane_from_frame_seq.py )
--- Utilize previous frame's binary combo result
---- Add past binary combo result in side window
---- Add those from past several frames
--- Utilize center line distance to identify possible center line position
+    - Utilize previous frame's binary combo result
+        - Add past binary combo result in side window
+        - Add those from past several frames
+    - Utilize center line distance to identify possible center line position
 
 - issues
--- S channel can't detect dotted lane line well
--- R and G channel tend to pick up unwanted object, like a white car, or noisy
--- R and G channel unreliable if roard is kind of white color.
--- Dotted line is so sparse, can't fit polyline well
--- Side wall is misunderstood as a lane line
--- Scene luminance change cause false lane detection a lot
--- Tree shadow causes false lane detection
--- Road crack causes false lane detection
--- Winding road can't be detected well
+    - S channel can't detect dotted lane line well
+    - R and G channel tend to pick up unwanted object, like a white car, or noisy
+    - R and G channel unreliable if roard is kind of white color.
+    - Dotted line is so sparse, can't fit polyline well
+    - Side wall is misunderstood as a lane line
+    - Scene luminance change cause false lane detection a lot
+    - Tree shadow causes false lane detection
+    - Road crack causes false lane detection
+    - Winding road can't be detected well
 
 
 - My current pipeline
--- R and G channel pick up false point a lot if road is kind of white color.
---- Color processing need to be enhanced more.
----- Just cancel R and G channel if too many points are detected.
----- Do R and G channel detection only within window area to normalize image within window area.
--- Fails with curved line such as in `harder_challenge_video.mp4`
---- Wider ROI region - but this may cuase false detection of other scenes more.
---- Probably need to detect almost horizontal lane line or a lane line completely dissapeared from a seen. Windowed approach should be improved.
---- My current pipeline shows lane line well continuous from several frames, so line tracing may work
--- Sometimes the pipeline detect the self car body as a starting point of lane line
---- Exclude know object from ROI
+    - R and G channel pick up false point a lot if road is kind of white color.
+        - Color processing need to be enhanced more.
+            - Just cancel R and G channel if too many points are detected.
+            - Do R and G channel detection only within window area to normalize image within window area.
+    - Fails with curved line such as in `harder_challenge_video.mp4`
+        - Wider ROI region - but this may cuase false detection of other scenes more.
+        - Probably need to detect almost horizontal lane line or a lane line completely dissapeared from a seen. Windowed approach should be improved.
+        - My current pipeline shows lane line well continuous from several frames, so line tracing may work
+    - Sometimes the pipeline detect the self car body as a starting point of lane line
+        - Exclude know object from ROI
 
