@@ -125,7 +125,8 @@ Here is an example of my result on a test image:
 
 Here's a [link to my video result](./output_videos/project_video_processed.mp4)
 
-Here's a [link to challenge video result](./output_videos/challenge_video_processed.mp4.mp4)
+Here's a [link to challenge video result](./output_videos/challenge_video_processedmp4)
+
 Here's a [link to harder challenge video result](./output_videos/harder_challenge_video_processed.mp4)
 
 
