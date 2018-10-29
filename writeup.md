@@ -15,7 +15,7 @@ The goals / steps of this project are the following:
 
 [image1]: ./output_images/undistort_output.png "Undistorted"
 [image2]: ./output_images/undistort_straight_lines1.png "Road Transformed"
-[image3]: ./output_images/binary_combo_example.jpg "Binary Example"
+[image3]: ./output_images/binary_combo_test6.jpg "Binary Example"
 [image4]: ./output_images/warped_straight_lines1.jpg "Warp Example"
 [image5]: ./output_images/color_fit_lines_test1.jpg "Fit Visual"
 [image6]: ./output_images/output_test1.jpg "Output"
@@ -34,6 +34,8 @@ All the 3d points `objpints` and 2d points `imgpoints` are passed to `cv2.calibr
 
 ![alt text][image1]
 
+Camera matrix is picled at line 152 of `my_work/camera_calibration.py` and re-used in `my_work/find_lane.py` and `my_work/find_lane_from_frame_seq`.
+
 ### Pipeline (single images)
 
 #### 1. Provide an example of a distortion-corrected image.
@@ -43,8 +45,10 @@ To demonstrate this step, I will describe how I apply the distortion correction 
 
 #### 2. Describe how (and identify where in your code) you used color transforms, gradients or other methods to create a thresholded binary image.  Provide an example of a binary image result.
 
-I used a combination of color and gradient thresholds to generate a binary image (thresholding steps at lines # through # in `another_file.py`).  Here's an example of my output for this step.  (note: this is not actually from one of the test images)
-Camera matrix is picled at line 152 of `my_work/camera_calibration.py` and re-used in `my_work/find_lane.py` and `my_work/find_lane_from_frame_seq`.
+I used a combination of color and gradient thresholds to generate a binary image (thresholding steps at lines 35 through 57 in `find_lane_from_frame_seq.py`).
+R and G channel for line color detection.
+Gradient, mag and dir thresholds are applied to S channel.   
+Here's an example of my output for this step.  (note: this is not actually from one of the test images)
 
 ![alt text][image3]
 
@@ -131,4 +135,39 @@ Here's a [link to harder challenge video result](./output_videos/harder_challeng
 
 #### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
 
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
+- approach
+-- Utilize R and G channel to help increase weight of lane line
+--- R and G channel includes luminance, so I normalized scene luminance as below.
+```python
+        image_normalize = (image_undistort - np.mean(image_undistort))/np.std(image_undistort)*32+128
+```
+( line 36 of find_lane_from_frame_seq.py )
+-- Utilize previous frame's binary combo result
+--- Add past binary combo result in side window
+--- Add those from past several frames
+-- Utilize center line distance to identify possible center line position
+
+- issues
+-- S channel can't detect dotted lane line well
+-- R and G channel tend to pick up unwanted object, like a white car, or noisy
+-- R and G channel unreliable if roard is kind of white color.
+-- Dotted line is so sparse, can't fit polyline well
+-- Side wall is misunderstood as a lane line
+-- Scene luminance change cause false lane detection a lot
+-- Tree shadow causes false lane detection
+-- Road crack causes false lane detection
+-- Winding road can't be detected well
+
+
+- My current pipeline
+-- R and G channel pick up false point a lot if road is kind of white color.
+--- Color processing need to be enhanced more.
+---- Just cancel R and G channel if too many points are detected.
+---- Do R and G channel detection only within window area to normalize image within window area.
+-- Fails with curved line such as in `harder_challenge_video.mp4`
+--- Wider ROI region - but this may cuase false detection of other scenes more.
+--- Probably need to detect almost horizontal lane line or a lane line completely dissapeared from a seen. Windowed approach should be improved.
+--- My current pipeline shows lane line well continuous from several frames, so line tracing may work
+-- Sometimes the pipeline detect the self car body as a starting point of lane line
+--- Exclude know object from ROI
+
