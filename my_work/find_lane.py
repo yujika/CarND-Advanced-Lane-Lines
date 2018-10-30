@@ -22,7 +22,7 @@ dst_points = dist_pickle['dst_points']
 
 # Define conversions in x and y from pixels space to meters
 ym_per_pix = 30/720 # meters per pixel in y dimension
-xm_per_pix = 3.7/700 # meters per pixel in x dimension
+xm_per_pix = 3.7/632 # meters per pixel in x dimension
 
 test_file_name = glob.glob('../test_images/test*.jpg')
 for image_file in test_file_name:
@@ -62,16 +62,16 @@ for image_file in test_file_name:
     plt.imshow(Rdash,cmap='gray')
     plt.show()
 
-    hls = cv2.cvtColor(image, cv2.COLOR_RGB2HLS)
+    hls = cv2.cvtColor(image_undistort, cv2.COLOR_RGB2HLS)
     H = hls[:,:,0]
     L = hls[:,:,1]
     S = hls[:,:,2]
     
 #    plt.title('H')
 #    plt.imshow(H,cmap='gray')
-#    plt.show()
-#    plt.title('L')
-#    plt.imshow(L,cmap='gray')
+    plt.show()
+    plt.title('L')
+    plt.imshow(L,cmap='gray')
 #    plt.show()
     plt.title('S')
     plt.imshow(S,cmap='gray')

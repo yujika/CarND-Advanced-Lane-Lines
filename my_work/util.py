@@ -199,28 +199,28 @@ def find_lane_pixels_with_history(binary_warped,
                                   minpix,
                                   window_pos,
                                   leftx_with_hist, lefty_with_hist, rightx_with_hist, righty_with_hist):
-    # Take a histogram of the bottom half of the image
-    histogram = np.sum(binary_warped[binary_warped.shape[0]//2:,:], axis=0)
-    # Find the peak of the left and right halves of the histogram
-    # These will be the starting point for the left and right lines
-    midpoint = np.int(histogram.shape[0]//2)
-    leftx_base = np.argmax(histogram[:midpoint])
-    rightx_base = np.argmax(histogram[midpoint:]) + midpoint
-
-
     # Set height of windows - based on nwindows above and image shape
     window_height = np.int(binary_warped.shape[0]//nwindows)
+
+    if ( len(window_pos) < nwindows):
+        # Take a histogram of the bottom half of the image
+        histogram = np.sum(binary_warped[binary_warped.shape[0]//2:,:], axis=0)
+        # Find the peak of the left and right halves of the histogram
+        # These will be the starting point for the left and right lines
+        midpoint = np.int(histogram.shape[0]//2)
+        leftx_base = np.argmax(histogram[:midpoint])
+        rightx_base = np.argmax(histogram[midpoint:]) + midpoint
+        # Current positions to be updated later for each window in nwindows
+        leftx_current = leftx_base
+        rightx_current = rightx_base
+    else:   
+        leftx_current = window_pos[0][0]
+        rightx_current = window_pos[0][1]
+
     # Identify the x and y positions of all nonzero pixels in the image
     nonzero = binary_warped.nonzero()
     nonzeroy = np.array(nonzero[0])
     nonzerox = np.array(nonzero[1])
-    # Current positions to be updated later for each window in nwindows
-    if ( window_pos == (0,0) ):
-        leftx_current = leftx_base
-        rightx_current = rightx_base
-    else:   
-        leftx_current = window_pos[0]
-        rightx_current = window_pos[1]
 
     # Create empty lists to receive left and right lane pixel indices
     left_lane_inds = []
@@ -260,20 +260,20 @@ def find_lane_pixels_with_history(binary_warped,
         right_lane_inds.append(good_right_inds)
         
         # If you found > minpix pixels, recenter next window on their mean position
-        left_no_lane_found = True
-        right_no_lane_found = True
-        if len(good_left_inds) + len(good_left_inds_from_hist) > minpix:
-            leftx_current = np.int(np.mean(np.append( nonzerox[good_left_inds], leftx_with_hist[good_left_inds_from_hist] )) )
-            left_no_lane_found = False
-        if len(good_right_inds) + len(good_right_inds_from_hist) > minpix:        
-            rightx_current = np.int(np.mean(np.append( nonzerox[good_right_inds], rightx_with_hist[good_right_inds_from_hist] )) )
-            right_no_lane_found = False
-        if ( left_no_lane_found and right_no_lane_found==False ):
-            leftx_current = int(rightx_current - 2.5/xm_per_pix)
-        if ( right_no_lane_found and left_no_lane_found==False ):
-            rightx_current = int(leftx_current + 2.5/xm_per_pix)
+        left_lane_found = False
+        right_lane_found = False
+        if len(good_left_inds) > minpix:
+            leftx_current = np.int(np.mean(nonzerox[good_left_inds]))
+            left_lane_found = True
+        if len(good_right_inds) > minpix:        
+            rightx_current = np.int(np.mean(nonzerox[good_right_inds]))
+            right_lane_found = True
+        if ( left_lane_found==False and right_lane_found ):
+            leftx_current = int(rightx_current - 3.7/xm_per_pix)
+        if ( right_lane_found==False and left_lane_found ):
+            rightx_current = int(leftx_current + 3.7/xm_per_pix)
             
-        window_pos_ret.append( (leftx_current,rightx_current,win_y_high) )
+        window_pos_ret.append( (leftx_current,rightx_current,win_y_high,left_lane_found,right_lane_found) )
         
 
     # Concatenate the arrays of indices (previously was a list of lists of pixels)
@@ -297,8 +297,14 @@ def find_lane_pixels_with_history(binary_warped,
 
 def fit_polynomial(leftx, lefty, rightx, righty, pic_height):
     # Fit a second order polynomial to each using `np.polyfit`
-    left_fit = np.polyfit(lefty, leftx, 2)
-    right_fit = np.polyfit(righty, rightx, 2)
+    try:
+        left_fit = np.polyfit(lefty, leftx, 2)
+    except np.linalg.LinAlgError:
+        left_fitx = np.polyfit(lefty, leftx, 1)
+    try:
+        right_fit = np.polyfit(righty, rightx, 2)
+    except np.linalg.LinAlgError:
+        right_fit = np.polyfit(righty, rightx, 1)
 
 
     # Generate x and y values for plotting
@@ -312,7 +318,7 @@ def fit_polynomial(leftx, lefty, rightx, righty, pic_height):
         left_fitx = 1*ploty**2 + 1*ploty
         right_fitx = 1*ploty**2 + 1*ploty
 
-    return ( left_fitx, right_fitx )
+    return ( left_fitx, right_fitx, left_fit, right_fit )
 
 
 def measure_curvature_pixels(left_fit, right_fit, ploty ):
@@ -357,3 +363,41 @@ def weighted_img(img, initial_img, α=0.8, β=1., γ=0.):
     NOTE: initial_img and img must be the same shape!
     """
     return cv2.addWeighted(initial_img, α, img, β, γ )
+
+def fit_poly(img_shape, leftx, lefty, rightx, righty):
+     ### TO-DO: Fit a second order polynomial to each with np.polyfit() ###
+    left_fit = np.polyfit(lefty, leftx, 2)
+    right_fit = np.polyfit(righty, rightx, 2)
+    # Generate x and y values for plotting
+    ploty = np.linspace(0, img_shape[0]-1, img_shape[0])
+    ### TO-DO: Calc both polynomials using ploty, left_fit and right_fit ###
+    left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
+    right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
+    
+    return left_fitx, right_fitx, ploty
+
+def search_around_poly(binary_warped, left_fit, right_fit, margin ):
+    # Grab activated pixels
+    nonzero = binary_warped.nonzero()
+    nonzeroy = np.array(nonzero[0])
+    nonzerox = np.array(nonzero[1])
+    
+    ### TO-DO: Set the area of search based on activated x-values ###
+    ### within the +/- margin of our polynomial function ###
+    ### Hint: consider the window areas for the similarly named variables ###
+    ### in the previous quiz, but change the windows to our new search area ###
+    left_lane_inds = ((nonzerox > (left_fit[0]*(nonzeroy**2) + left_fit[1]*nonzeroy + 
+                    left_fit[2] - margin)) & (nonzerox < (left_fit[0]*(nonzeroy**2) + 
+                    left_fit[1]*nonzeroy + left_fit[2] + margin)))
+    right_lane_inds = ((nonzerox > (right_fit[0]*(nonzeroy**2) + right_fit[1]*nonzeroy + 
+                    right_fit[2] - margin)) & (nonzerox < (right_fit[0]*(nonzeroy**2) + 
+                    right_fit[1]*nonzeroy + right_fit[2] + margin)))
+    
+    # Again, extract left and right line pixel positions
+    leftx = nonzerox[left_lane_inds]
+    lefty = nonzeroy[left_lane_inds] 
+    rightx = nonzerox[right_lane_inds]
+    righty = nonzeroy[right_lane_inds]
+
+    
+    return leftx,lefty, rightx,righty
